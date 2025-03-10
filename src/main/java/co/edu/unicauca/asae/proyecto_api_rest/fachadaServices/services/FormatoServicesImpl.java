@@ -17,16 +17,25 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import co.edu.unicauca.asae.proyecto_api_rest.capaAccesoADatos.models.FormatoEntity;
+import co.edu.unicauca.asae.proyecto_api_rest.capaAccesoADatos.models.FormatoTIEntity;
 import co.edu.unicauca.asae.proyecto_api_rest.capaAccesoADatos.repositories.FormatoRepository;
+import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.Formato;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.DTO.DTOFormato;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.DTO.peticion.DTOFormatoPPPeticion;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.DTO.peticion.DTOFormatoTIPeticion;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.DTO.respuesta.DTOFormatoPPRespuesta;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.DTO.respuesta.DTOFormatoTIRespuesta;
+import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.estados.EstadoAprobado;
+import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.estados.EstadoEnCorreccion;
+import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.estados.EstadoEnEvaluacion;
+import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.estados.EstadoFormulado;
+import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.estados.EstadoNoAprobado;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.estados.Resultado;
 
 @Service("IDFachadaFormatoServices")
 public class FormatoServicesImpl implements IFormatoServices {
+
+    Formato formato = new Formato();
 
     @Qualifier("IDFormatoRepository")
     private FormatoRepository servicioAccesoBaseDatos;
@@ -206,8 +215,50 @@ public class FormatoServicesImpl implements IFormatoServices {
     }
 
     @Override
-    public void cambiarEstado(Integer id, String estado) {
+    public void cambiarEstado(Integer id, String estadoNuevo){
+        // Primero verificamos si el formato existe
+        Optional<FormatoEntity> formatoExistenteOpt = this.servicioAccesoBaseDatos.obtenerFormato(id);
+        obtenerEstadoActual(formatoExistenteOpt.get().getEstado());
+        Resultado objResultado = null;
+        switch (estadoNuevo) {
+            case "evaluar":
+                objResultado = this.formato.enviarParaEvaluacion();
+                break;
+            case "corregir":
+                objResultado = this.formato.corregirFormato();
+                break;
+            case "aprobado":
+                objResultado = this.formato.aprobarFormato();
+                    break;
+            case "rechazado":
+                objResultado = this.formato.noAprobarFormato();
+                    break;
+            case "formulado":
+                break;
+            default:
+                break;
+        }
+    }
 
+    
+    public void obtenerEstadoActual(String estado) {
+        switch (estado) {
+            case "evaluar":
+                formato.setEstado(new EstadoEnEvaluacion());
+                break;
+            case "corregir":
+                formato.setEstado(new EstadoEnCorreccion());
+                break;
+            case "aprobado":
+                formato.setEstado(new EstadoAprobado());
+                break;
+            case "rechazado":
+                formato.setEstado(new EstadoNoAprobado());
+                break;
+            case "formulado":
+                formato.setEstado(new EstadoFormulado());
+                break;
+        }
     }
 
 }

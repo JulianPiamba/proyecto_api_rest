@@ -9,7 +9,7 @@ public class Formato {
     private EstadoInt estado;
 
     public Formato(){
-        this.estado = new EstadoFormulado();
+        
     }
     
     public void setEstado(EstadoInt estado){
