@@ -15,11 +15,14 @@ import lombok.Setter;
 @Setter
 
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "tipoFormato")
+//@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "tipoFormato")
 @JsonSubTypes({
     @JsonSubTypes.Type(value = DTOFormatoPPRespuesta.class, name = "PP"),
-    @JsonSubTypes.Type(value = DTOFormatoTIRespuesta.class, name = "TI")
+    @JsonSubTypes.Type(value = DTOFormatoTIRespuesta.class, name = "TI"),
+    @JsonSubTypes.Type(value = DTOFormatoPPPeticion.class, name = "PPeticion"),
+    @JsonSubTypes.Type(value = DTOFormatoTIPeticion.class, name = "TIPeticion")
 })
+
 
 public class DTOFormato {
 
