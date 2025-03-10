@@ -16,7 +16,8 @@ public class FormatoEntity {
     String estado;
     String titulo;
     String director;
-    List<String> listaObjetivos;
+    String tipoFormato;
+    //List<String> listaObjetivos;
 
     public FormatoEntity(){
         

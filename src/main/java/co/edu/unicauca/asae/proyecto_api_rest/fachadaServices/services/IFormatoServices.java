@@ -1,5 +1,6 @@
 package co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.services;
 
+import java.util.Date;
 import java.util.List;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.DTO.*;
 //import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.DTO.respuesta.DTOFormatoPPRespuesta;
@@ -7,7 +8,7 @@ import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.DTO.*;
 public interface IFormatoServices {
 
     public DTOFormato obtenerFormato(Integer id);
-    public List<DTOFormato> listarFormatos();
+    public List<DTOFormato> listarFormatosPorFecha(Date fechaInicio, Date fechaFin);
     public DTOFormato registrarFormato(DTOFormato formato);
     public DTOFormato actualizarFormato(Integer id, DTOFormato formato);
     public void cambiarEstado(Integer id, String estado);
