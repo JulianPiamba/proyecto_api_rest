@@ -17,17 +17,16 @@ import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.services.IFormatoS
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-
-
 
 @RestController
 @RequestMapping("/api")
 public class FormatoRestCotroller {
-    
+
     @Autowired
-	@Qualifier("IDFachadaFormatoServices")
-	private IFormatoServices formatoService;
+    @Qualifier("IDFachadaFormatoServices")
+    private IFormatoServices formatoService;
 
     @GetMapping("/formato/{id}")
     public DTOFormato getFormato(@PathVariable Integer id) {
@@ -36,8 +35,20 @@ public class FormatoRestCotroller {
         return objFormato;
     }
 
+    @PutMapping("/formato/{id}")
+    public ResponseEntity<DTOFormato> actualizarFormato(@PathVariable Integer id, @RequestBody DTOFormato formatoDTO) {
+        try {
+            DTOFormato formatoActualizado = formatoService.actualizarFormato(id, formatoDTO);
+            return ResponseEntity.ok(formatoActualizado);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
     @GetMapping("/formatos")
-    public List<DTOFormato> listarClientes() {        
+    public List<DTOFormato> listarClientes() {
         // Definir las fechas usando LocalDate
         LocalDate inicio = LocalDate.of(2024, 3, 1);
         LocalDate fin = LocalDate.of(2025, 12, 30);
@@ -58,7 +69,4 @@ public class FormatoRestCotroller {
         return ResponseEntity.ok(formato);
     }
 
-    
-    
-    
 }

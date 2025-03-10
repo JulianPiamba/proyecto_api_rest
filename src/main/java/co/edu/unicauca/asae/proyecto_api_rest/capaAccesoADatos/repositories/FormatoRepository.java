@@ -27,11 +27,12 @@ public class FormatoRepository{
             return Optional.ofNullable(mapaFormatos.get(id));
         }
 
-        public Optional<Collection<FormatoEntity>> listarFormatosPorFecha(Date fechaInicio, Date fechaFin){
+        public Optional<Collection<FormatoEntity>> listarFormatosPorFecha(Date fechaInicio, Date fechaFin) {
             System.out.println("Invocando a listar formatos por fecha");
             Collection<FormatoEntity> formatosFiltrados = mapaFormatos.values().stream()
-                .filter(formato -> formato.getFecha().compareTo(fechaInicio) >= 0 &&
-                            formato.getFecha().compareTo(fechaFin) <= 0)
+                .filter(formato -> formato.getFecha() != null && 
+                        formato.getFecha().compareTo(fechaInicio) >= 0 &&
+                        formato.getFecha().compareTo(fechaFin) <= 0)
                 .collect(Collectors.toList());
             return formatosFiltrados.isEmpty() ? Optional.empty() : Optional.of(formatosFiltrados);
         }
