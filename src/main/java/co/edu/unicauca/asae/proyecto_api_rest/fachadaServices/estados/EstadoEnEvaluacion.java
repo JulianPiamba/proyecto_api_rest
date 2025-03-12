@@ -30,4 +30,9 @@ public class EstadoEnEvaluacion implements EstadoInt {
         formato.setEstado(objEstado);
         return new Resultado(true, "Estado cambiado a correcciones");
     }
+
+    @Override
+    public String toString() {
+        return "evaluar";
+    }  
 }

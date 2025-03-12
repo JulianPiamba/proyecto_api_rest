@@ -27,7 +27,7 @@ public class EstadoAprobado implements EstadoInt {
 
     @Override
     public String toString(){
-        return "Aprobado";
+        return "aprobado";
     }
 }
 

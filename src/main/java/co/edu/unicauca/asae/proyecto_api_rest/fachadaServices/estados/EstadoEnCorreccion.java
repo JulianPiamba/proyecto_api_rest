@@ -29,6 +29,6 @@ public class EstadoEnCorreccion implements EstadoInt {
 
     @Override
     public String toString() {
-        return "Formulado con correciones+";
+        return "corregir";
     }    
 }

@@ -1,19 +1,19 @@
 package co.edu.unicauca.asae.proyecto_api_rest.capaDeControladores;
 
 import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Date;
 
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.DTO.DTOFormato;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.services.IFormatoServices;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +35,19 @@ public class FormatoRestCotroller {
         return objFormato;
     }
 
+    @PutMapping("/formato/{id}/{estado}")
+    public ResponseEntity<String> cambiarEstado(@PathVariable Integer id, @PathVariable String estado) {
+        String mensaje = formatoService.cambiarEstado(id, estado);
+        return ResponseEntity.ok(mensaje);
+    }
+
+    @PostMapping("/formatos")
+    public ResponseEntity<? extends DTOFormato> registrarFormato(@RequestBody DTOFormato formato) {
+
+        DTOFormato resultado = formatoService.registrarFormato(formato);
+        return ResponseEntity.ok(resultado);
+    }
+
     @PutMapping("/formato/{id}")
     public ResponseEntity<DTOFormato> actualizarFormato(@PathVariable Integer id, @RequestBody DTOFormato formatoDTO) {
         try {
@@ -47,26 +60,21 @@ public class FormatoRestCotroller {
         }
     }
 
-    @GetMapping("/formatos")
-    public List<DTOFormato> listarClientes() {
-        // Definir las fechas usando LocalDate
-        LocalDate inicio = LocalDate.of(2024, 3, 1);
-        LocalDate fin = LocalDate.of(2025, 12, 30);
+    @GetMapping("/formato/{fechaInicio}/{fechaFin}")
+    public ResponseEntity<List<DTOFormato>> listarFormatosPorFecha(
+            @PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd") Date fechaInicio,
+            @PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd") Date fechaFin) {
 
-        // Convertir LocalDate a Date
-        Date fechaInicio = Date.from(inicio.atStartOfDay(ZoneId.systemDefault()).toInstant());
-        Date fechaFin = Date.from(fin.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        try {
+            List<DTOFormato> formatos = formatoService.listarFormatosPorFecha(fechaInicio, fechaFin);
 
-        return formatoService.listarFormatosPorFecha(fechaInicio, fechaFin);
-    }
+            if (formatos.isEmpty()) {
+                return ResponseEntity.noContent().build();
+            }
 
-    @PostMapping("formatos")
-    public ResponseEntity<DTOFormato> registrarFormato(@RequestBody DTOFormato formatoPeticionDTO) {
-        if (formatoPeticionDTO == null) {
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.ok(formatos);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
-        DTOFormato formato = formatoService.registrarFormato(formatoPeticionDTO);
-        return ResponseEntity.ok(formato);
     }
-
 }

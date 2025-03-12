@@ -1,28 +1,23 @@
 package co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.services;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
-import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import co.edu.unicauca.asae.proyecto_api_rest.capaAccesoADatos.models.FormatoEntity;
+import co.edu.unicauca.asae.proyecto_api_rest.capaAccesoADatos.models.FormatoPPEntity;
 import co.edu.unicauca.asae.proyecto_api_rest.capaAccesoADatos.models.FormatoTIEntity;
 import co.edu.unicauca.asae.proyecto_api_rest.capaAccesoADatos.repositories.FormatoRepository;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.Formato;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.DTO.DTOFormato;
-import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.DTO.peticion.DTOFormatoPPPeticion;
-import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.DTO.peticion.DTOFormatoTIPeticion;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.DTO.respuesta.DTOFormatoPPRespuesta;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.DTO.respuesta.DTOFormatoTIRespuesta;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.estados.EstadoAprobado;
@@ -49,31 +44,27 @@ public class FormatoServicesImpl implements IFormatoServices {
 
     @Override
     public DTOFormato obtenerFormato(Integer id) {
-        return this.servicioAccesoBaseDatos.obtenerFormato(id)
-                .map(formatoEntity -> {
-                    switch (formatoEntity.getTipoFormato()) {
-                        case "PP":
-                            return modelMapper.map(formatoEntity, DTOFormatoPPRespuesta.class);
-                        case "TI":
-                            return modelMapper.map(formatoEntity, DTOFormatoTIRespuesta.class);
-                        default:
-                            throw new IllegalArgumentException(
-                                    "Tipo de formato desconocido: " + formatoEntity.getTipoFormato());
-                    }
-                })
-                .orElseThrow(() -> new RuntimeException("Formato con ID " + id + " no encontrado"));
+        FormatoEntity formatoEntity = this.servicioAccesoBaseDatos.obtenerFormato(id)
+                .orElseThrow(() -> new NoSuchElementException("Formato con ID " + id + " no encontrado"));
+
+        return modelMapper.map(formatoEntity, obtenerClaseDTO(formatoEntity));
+    }
+
+    private Class<? extends DTOFormato> obtenerClaseDTO(FormatoEntity formatoEntity) {
+        if (formatoEntity instanceof FormatoPPEntity) {
+            return DTOFormatoPPRespuesta.class;
+        } else if (formatoEntity instanceof FormatoTIEntity) {
+            return DTOFormatoTIRespuesta.class;
+        } else {
+            throw new IllegalArgumentException(
+                    "Tipo de formato desconocido: " + formatoEntity.getClass().getSimpleName());
+        }
     }
 
     @Override
     public List<DTOFormato> listarFormatosPorFecha(Date fechaInicio, Date fechaFin) {
-        Optional<Collection<FormatoEntity>> formatosEntityOpt = this.servicioAccesoBaseDatos
-                .listarFormatosPorFecha(fechaInicio, fechaFin);
-
-        if (formatosEntityOpt.isEmpty()) {
-            return List.of();
-        }
-
-        Collection<FormatoEntity> formatosEntity = formatosEntityOpt.get();
+        Collection<FormatoEntity> formatosEntity = servicioAccesoBaseDatos.listarFormatosPorFecha(fechaInicio, fechaFin)
+                .orElse(Collections.emptyList());
 
         return formatosEntity.stream().map(entity -> {
             switch (entity.getTipoFormato()) {
@@ -87,69 +78,37 @@ public class FormatoServicesImpl implements IFormatoServices {
         }).collect(Collectors.toList());
     }
 
-    /*
-     * @Override
-     * public DTOFormato registrarFormato(DTOFormato formatoPeticionDTO) {
-     * 
-     * FormatoEntity formatoEntity = this.modelMapper.map(formatoPeticionDTO,
-     * FormatoEntity.class);
-     * FormatoEntity objFormatoEntity =
-     * this.servicioAccesoBaseDatos.registrarFormato(formatoEntity);
-     * System.out.println(objFormatoEntity);
-     * DTOFormato formatoDTO = this.modelMapper.map(objFormatoEntity,
-     * DTOFormato.class);
-     * 
-     * Date fechaActual =
-     * Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
-     * formatoDTO.setFecha(fechaActual);
-     * return formatoDTO;
-     * }
-     */
     @Override
-    public DTOFormato registrarFormato(DTOFormato formatoPeticionDTO) {
-        // Validar el tipo de formato
-        if (formatoPeticionDTO.getTipoFormato() == null || 
-            (!formatoPeticionDTO.getTipoFormato().equals("PP") && 
-             !formatoPeticionDTO.getTipoFormato().equals("TI"))) {
+    public DTOFormato registrarFormato(DTOFormato formato) {
+        if (formato.getTipoFormato() == null ||
+                (!formato.getTipoFormato().equals("PP") &&
+                        !formato.getTipoFormato().equals("TI"))) {
             throw new IllegalArgumentException("Tipo de formato debe ser PP o TI");
         }
-        
-        // Asegurar que título y director no sean nulos
-        if (formatoPeticionDTO.getTitulo() == null || formatoPeticionDTO.getTitulo().isEmpty()) {
-            throw new IllegalArgumentException("El título no puede estar vacío");
-        }
-        
-        if (formatoPeticionDTO.getDirector() == null || formatoPeticionDTO.getDirector().isEmpty()) {
-            throw new IllegalArgumentException("El director no puede estar vacío");
-        }
-        
-        FormatoEntity formatoEntity = this.modelMapper.map(formatoPeticionDTO, FormatoEntity.class);
-        
-        // Si no se proporcionó una fecha, usar la fecha actual
+        Class<? extends FormatoEntity> claseEntity = obtenerClaseEntity(formato.getTipoFormato());
+        FormatoEntity formatoEntity = modelMapper.map(formato, claseEntity);
+
         if (formatoEntity.getFecha() == null) {
             Date fechaActual = new Date();
             formatoEntity.setFecha(fechaActual);
         }
-        
-        // Estado por defecto si es nulo
+
         if (formatoEntity.getEstado() == null) {
-            formatoEntity.setEstado("Pendiente"); // O el estado inicial que prefieras
+            formatoEntity.setEstado("formulado");
         }
-        
-        // Autogenerar ID si no existe
+
         if (formatoEntity.getId() == null) {
             int maxId = this.servicioAccesoBaseDatos.listarFormatosPorFecha(new Date(0), new Date())
-                .map(collection -> collection.stream()
-                    .mapToInt(FormatoEntity::getId)
-                    .max()
-                    .orElse(0))
-                .orElse(0);
+                    .map(collection -> collection.stream()
+                            .mapToInt(FormatoEntity::getId)
+                            .max()
+                            .orElse(0))
+                    .orElse(0);
             formatoEntity.setId(maxId + 1);
         }
-        
+
         FormatoEntity objFormatoEntity = this.servicioAccesoBaseDatos.registrarFormato(formatoEntity);
-        
-        // Convertir la entidad guardada de vuelta a DTO según su tipo
+
         switch (objFormatoEntity.getTipoFormato()) {
             case "PP":
                 return modelMapper.map(objFormatoEntity, DTOFormatoPPRespuesta.class);
@@ -160,67 +119,121 @@ public class FormatoServicesImpl implements IFormatoServices {
         }
     }
 
+    private Class<? extends FormatoEntity> obtenerClaseEntity(String tipoFormato) {
+        switch (tipoFormato) {
+            case "PP":
+                return FormatoPPEntity.class;
+            case "TI":
+                return FormatoTIEntity.class;
+            default:
+                throw new IllegalArgumentException("Tipo de formato desconocido: " + tipoFormato);
+        }
+    }
+
     @Override
     public DTOFormato actualizarFormato(Integer id, DTOFormato formatoDTO) {
-        // Primero verificamos si el formato existe
         Optional<FormatoEntity> formatoExistenteOpt = this.servicioAccesoBaseDatos.obtenerFormato(id);
-
         if (formatoExistenteOpt.isEmpty()) {
-            throw new RuntimeException("Formato con ID " + id + " no encontrado para actualizar");
+            throw new NoSuchElementException("Formato con ID " + id + " no encontrado para actualizar");
         }
 
         FormatoEntity formatoExistente = formatoExistenteOpt.get();
 
-        // Mapeamos el DTO a entidad, preservando el ID
-        FormatoEntity formatoEntity = this.modelMapper.map(formatoDTO, FormatoEntity.class);
-        formatoEntity.setId(id); // Aseguramos que el ID sea el mismo
+        if (formatoDTO.getTipoFormato() != null &&
+                !formatoDTO.getTipoFormato().equals(formatoExistente.getTipoFormato())) {
+            throw new IllegalArgumentException("No se puede cambiar el tipo de formato");
+        }
+        Class<? extends FormatoEntity> claseEntity = obtenerClaseEntity(formatoExistente.getTipoFormato());
 
-        // Preservar la fecha si no se proporcionó una nueva
-        if (formatoEntity.getFecha() == null) {
-            formatoEntity.setFecha(formatoExistente.getFecha());
+        FormatoEntity formatoActualizado = this.modelMapper.map(formatoDTO, claseEntity);
+        formatoActualizado.setId(id);
+        formatoActualizado.setTipoFormato(formatoExistente.getTipoFormato());
+
+        if (formatoActualizado.getFecha() == null) {
+            formatoActualizado.setFecha(formatoExistente.getFecha());
         }
 
-        // Preservar otros campos si son nulos en el DTO de actualización
-        if (formatoEntity.getEstado() == null) {
-            formatoEntity.setEstado(formatoExistente.getEstado());
+        if (formatoActualizado.getEstado() == null) {
+            formatoActualizado.setEstado(formatoExistente.getEstado());
         }
 
-        // Aquí podrías añadir más campos específicos según cada tipo de formato
+        if (formatoActualizado.getTitulo() == null) {
+            formatoActualizado.setTitulo(formatoExistente.getTitulo());
+        }
 
-        // Llamamos al repositorio para actualizar
+        if (formatoActualizado.getDirector() == null) {
+            formatoActualizado.setDirector(formatoExistente.getDirector());
+        }
+
+        if (formatoExistente instanceof FormatoPPEntity && formatoActualizado instanceof FormatoPPEntity) {
+            FormatoPPEntity ppExistente = (FormatoPPEntity) formatoExistente;
+            FormatoPPEntity ppActualizado = (FormatoPPEntity) formatoActualizado;
+
+            if (ppActualizado.getAsesor() == null) {
+                ppActualizado.setAsesor(ppExistente.getAsesor());
+            }
+
+            if (ppActualizado.getEstudiante() == null) {
+                ppActualizado.setEstudiante(ppExistente.getEstudiante());
+            }
+            if (ppActualizado.getCodigo() == null) {
+                ppActualizado.setCodigo((ppExistente.getCodigo()));
+            }
+        } else if (formatoExistente instanceof FormatoTIEntity && formatoActualizado instanceof FormatoTIEntity) {
+            FormatoTIEntity tiExistente = (FormatoTIEntity) formatoExistente;
+            FormatoTIEntity tiActualizado = (FormatoTIEntity) formatoActualizado;
+
+            if (tiActualizado.getEstudiante1() == null) {
+                tiActualizado.setEstudiante1(tiExistente.getEstudiante1());
+            }
+
+            if (tiActualizado.getEstudiante2() == null) {
+                tiActualizado.setEstudiante2(tiExistente.getEstudiante2());
+            }
+
+            if (tiActualizado.getCodigoEstudiante1() == null) {
+                tiActualizado.setCodigoEstudiante1((tiExistente.getCodigoEstudiante1()));
+            }
+
+            if (tiActualizado.getCodigoEstudiante2() == null) {
+                tiActualizado.setCodigoEstudiante2((tiExistente.getCodigoEstudiante2()));
+            }
+        }
+
         Optional<FormatoEntity> formatoActualizadoOpt = this.servicioAccesoBaseDatos.actualizarFormato(id,
-                formatoEntity);
+                formatoActualizado);
 
         if (formatoActualizadoOpt.isEmpty()) {
             throw new RuntimeException("Error al actualizar el formato con ID " + id);
         }
 
-        FormatoEntity formatoActualizado = formatoActualizadoOpt.get();
+        FormatoEntity formatoGuardado = formatoActualizadoOpt.get();
 
-        // Convertimos la entidad actualizada a DTO según su tipo
         DTOFormato formatoActualizadoDTO;
-        switch (formatoActualizado.getTipoFormato()) {
+        switch (formatoGuardado.getTipoFormato()) {
             case "PP":
-                formatoActualizadoDTO = modelMapper.map(formatoActualizado, DTOFormatoPPRespuesta.class);
+                formatoActualizadoDTO = modelMapper.map(formatoGuardado, DTOFormatoPPRespuesta.class);
                 break;
             case "TI":
-                formatoActualizadoDTO = modelMapper.map(formatoActualizado, DTOFormatoTIRespuesta.class);
+                formatoActualizadoDTO = modelMapper.map(formatoGuardado, DTOFormatoTIRespuesta.class);
                 break;
             default:
-                throw new IllegalArgumentException(
-                        "Tipo de formato desconocido: " + formatoActualizado.getTipoFormato());
+                throw new IllegalArgumentException("Tipo de formato desconocido: " + formatoGuardado.getTipoFormato());
         }
 
         return formatoActualizadoDTO;
     }
 
     @Override
-    public void cambiarEstado(Integer id, String estadoNuevo){
-        // Primero verificamos si el formato existe
+    public String cambiarEstado(Integer id, String estadoNuevo) {
         Optional<FormatoEntity> formatoExistenteOpt = this.servicioAccesoBaseDatos.obtenerFormato(id);
-        obtenerEstadoActual(formatoExistenteOpt.get().getEstado());
+        if (formatoExistenteOpt.isEmpty()) {
+            throw new NoSuchElementException("Formato con ID " + id + " no encontrado");
+        }
+        FormatoEntity formatoExistente = formatoExistenteOpt.get();
+        obtenerEstadoActual(formatoExistente.getEstado());
         Resultado objResultado = null;
-        switch (estadoNuevo) {
+        switch (estadoNuevo.toLowerCase()) {
             case "evaluar":
                 objResultado = this.formato.enviarParaEvaluacion();
                 break;
@@ -229,18 +242,27 @@ public class FormatoServicesImpl implements IFormatoServices {
                 break;
             case "aprobado":
                 objResultado = this.formato.aprobarFormato();
-                    break;
+                break;
             case "rechazado":
                 objResultado = this.formato.noAprobarFormato();
-                    break;
-            case "formulado":
                 break;
+            case "formulado":
+                return "No se puede puede enviar a estado formulado";
             default:
                 break;
         }
+        if (objResultado.cambioPermitido() == true) {
+            String estadoActual = this.formato.getEstado().toString();
+            System.out.println(estadoActual);
+            formatoExistente.setEstado(estadoActual);
+            DTOFormato formatoDTO = modelMapper.map(formatoExistente, DTOFormato.class);
+            actualizarFormato(id, formatoDTO);
+            return objResultado.mensaje();
+        } else {
+            return objResultado.mensaje();
+        }
     }
 
-    
     public void obtenerEstadoActual(String estado) {
         switch (estado) {
             case "evaluar":

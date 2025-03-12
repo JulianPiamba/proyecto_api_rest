@@ -8,13 +8,13 @@ public class EstadoFormulado implements EstadoInt{
     public Resultado enviarParaEvaluacion(Formato formato){
         EstadoEnEvaluacion objEstado = new EstadoEnEvaluacion();
         formato.setEstado(objEstado);
-        return new Resultado(true, "Estado cambiadoa evaluacion de manera exitosa");
+        return new Resultado(true, "Estado cambiado a evaluacion de manera exitosa");
         
     }
     
     @Override
     public Resultado aprobarFormato(Formato formato){
-        return new Resultado(false, "EUn formato formulado, no puede ser directamente aprobado");
+        return new Resultado(false, "Un formato formulado, no puede ser directamente aprobado");
     }
 
     @Override
@@ -27,5 +27,9 @@ public class EstadoFormulado implements EstadoInt{
         return new Resultado(false, "Un formato formulado, no puede tener correcciones directamente");
     }
 
+    @Override
+    public String toString() {
+        return "formulado";
+    }  
 
 }

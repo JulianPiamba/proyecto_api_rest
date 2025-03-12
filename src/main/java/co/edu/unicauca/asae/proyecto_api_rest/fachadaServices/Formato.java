@@ -1,6 +1,5 @@
 package co.edu.unicauca.asae.proyecto_api_rest.fachadaServices;
 
-import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.estados.EstadoFormulado;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.estados.EstadoInt;
 import co.edu.unicauca.asae.proyecto_api_rest.fachadaServices.estados.Resultado;
 

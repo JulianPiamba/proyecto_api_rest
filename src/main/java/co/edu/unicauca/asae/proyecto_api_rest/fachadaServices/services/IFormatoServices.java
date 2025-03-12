@@ -11,6 +11,6 @@ public interface IFormatoServices {
     public List<DTOFormato> listarFormatosPorFecha(Date fechaInicio, Date fechaFin);
     public DTOFormato registrarFormato(DTOFormato formato);
     public DTOFormato actualizarFormato(Integer id, DTOFormato formato);
-    public void cambiarEstado(Integer id, String estado);
+    public String cambiarEstado(Integer id, String estado);
     
 }
